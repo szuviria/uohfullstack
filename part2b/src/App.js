@@ -31,11 +31,13 @@ const App = () => {
 
   const addPerson = (e) =>{
       e.preventDefault()
-      const foundPerson = persons.find(person => person.name === newName)
+      const copyNewName= newName
+      const newNameFormated = (copyNewName.trim().charAt(0).toUpperCase()) + copyNewName.trim().slice(1)
+      const foundPerson = persons.find(person => person.name === newNameFormated)
 
       if(!foundPerson){
          const personObject = {
-            name: newName,
+            name: newNameFormated,
             number: newNum
         }
 
@@ -50,31 +52,45 @@ const App = () => {
               setErrorMessage({message: null, className: null})
             }, 3000)
           })
+          .catch(error => {
+            console.log(newNameFormated)
+            //If para mensaje
+            setErrorMessage({message: error.response.data.error, className: 'error'})
+            setTimeout(() => {
+              setErrorMessage({message: null, className: null})
+            }, 3000)
+            setNewName('')
+            setNewNum('')
+          })
 
    
       } 
       else {
-        if(window.confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)){
+        if(window.confirm(`${newNameFormated} is already added to phonebook, replace the old number with a new one?`)){
           const changedPerson = {...foundPerson, number: newNum}
 
           personService
             .updatePerson(changedPerson)
             .then(updatedPerson => {
               setPersons(persons.map(person => person.id !== updatedPerson.id ? person : updatedPerson ))
+              setErrorMessage({message: `Information of ${updatedPerson.name} has been updated`, className: 'added'})
+              setTimeout(() => {
+                setErrorMessage({message: null, className: null})
+              }, 3000)
             })
-            .catch(err => {  
-              const prevPersons = [...persons]
-              const indexPerson = prevPersons.findIndex(person => parseInt(person.id) === parseInt(changedPerson.id))
-              prevPersons.splice(indexPerson, 1)
+            .catch(error => {  
+              // const prevPersons = [...persons]
+              // const indexPerson = prevPersons.findIndex(person => parseInt(person.id) === parseInt(changedPerson.id))
+              // prevPersons.splice(indexPerson, 1)
 
-              setErrorMessage({message: `Information of ${changedPerson.name} has already been removed from server`, className: 'error'})
-              setPersons(prevPersons)
+              setErrorMessage({message: error.response.data.error, className: 'error'})
+              // setPersons(prevPersons)
               setTimeout(() => {
                 setErrorMessage({message: null, className: null})
               }, 3000)
               
-              setNewName('')
               setNewNum('')
+              setNewName('')
             })
             setNewName('')
             setNewNum('')
@@ -94,9 +110,13 @@ const App = () => {
      personService
         .deletePerson(e.target.id)
         .then(() => {
+          setErrorMessage({message: `Information of ${e.target.name} has been deleted`, className: 'error'})
+          setTimeout(() => {
+            setErrorMessage({message: null, className: null})
+          }, 3000)
             prevPersons.splice(indexPerson, 1)
-            console.log(prevPersons)
             setPersons(prevPersons)
+           
         })
         .catch(err => {  
           const prevPersons = [...persons]
